@@ -91,6 +91,10 @@ def get_date ():
 
     return str_year + str_month + str_day
 
+def add_acct_alignments(df1, df2):
+   df3 = df1.index.to_series().apply(lambda x: df2[df2.index==x].loc[x,'SE':'Region'])
+   return pd.concat([df1, df3], axis=1)
+
 lost = 'Lost, Cancelled - 0%'
 won = 'Win - 100%'
 
@@ -99,6 +103,9 @@ date = get_date()
 file_loc = r"C:\Users\Zach_Schulz-Behrend\OneDrive - Dell Technologies\Documents\data\order-oppty_analysis\SFDC pipeline\ZKSB13 - All opportunities-2025-02-25-10-23-06.csv"
 file_loc_my_accts = r"c:\Users\Zach_Schulz-Behrend\OneDrive - Dell Technologies\Documents\data\account-alignments\FY26\_myAccounts.xlsx"
 file_loc_store_designs = r"c:\Users\Zach_Schulz-Behrend\OneDrive - Dell Technologies\Documents\data\order-oppty_analysis\Designs_{0}.xlsx".format(date)
+out_cols = ['Account Name', 'SE', 'AE', 'ISR', 'Region', 'Opportunity Name', 'Stage', 'Unweighted Rev',
+            'Unweighted Rev Currency', 'Probability (%)', 'Age','Book Date', 'Created Date', 'Next Step', 
+            'Opportunity Type',]
 
 if __name__ == '__main__':
     oppty = pd.read_csv(file_loc)
@@ -111,5 +118,12 @@ if __name__ == '__main__':
     flag_my_accts = oppty['Affinity ID'].apply(lambda x: x in df_my_accts.index)
     oppty = oppty[flag_my_accts]
 
-    df_designs = oppty[oppty["Opportunity Type"]=="Design"]
     df_not_designs = oppty[oppty["Opportunity Type"]!="Design"]
+
+    df_designs = oppty[oppty["Opportunity Type"]=="Design"]
+    df_designs = revenue_format(df_designs)                 #TODO: Necessary? could be accomplished in xlswriter
+    df_designs = add_acct_alignments(df_designs, df_my_accts)
+    df_designs = df_designs[out_cols]
+
+    df_designs.to_excel(file_loc_store_designs, index=False)
+    
